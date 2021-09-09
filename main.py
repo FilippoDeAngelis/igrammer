@@ -1,4 +1,5 @@
 import glob
+import sys, getopt
 from PIL import Image, ImageDraw
 
 # read all the picture files
@@ -35,9 +36,9 @@ def stretch_pictures(picture_names):
         resized_images.append(resized_image)
     return resized_images
 
-def add_transparent_layer(images):
+def add_transparent_layer(images, opacity):
     # takes Image list, returns Image list
-    color = (255, 255, 255, 204)
+    color = (255, 255, 255, opacity if opacity is not None else 204)   #make opacity 204 by default
 
     output_images = []
     counter = 0
@@ -81,8 +82,24 @@ def save_pictures(images):
         counter += 1
 
 if __name__ == "__main__":
+    opacity = None
+
+    try:
+        # sys.argv needs a [1:] because getopt doesn't work if you leave the script name as an argument
+        options, args = getopt.getopt(sys.argv[1:], "o:", ["opacity="])
+    except getopt.GetoptError:
+        print("getopt error") #todo add tutorial
+        pass
+
+    for option, argument in options:
+        if option in ["-o", "--opacity"]:  #opacity can be 0-255
+            opacity = int(argument)
+
+
     pictures = get_all_pictures_in_current_folder()
     stretched_pictures = stretch_pictures(pictures)
-    whitened_pictures = add_transparent_layer(stretched_pictures)
+    whitened_pictures = add_transparent_layer(stretched_pictures, opacity)
     final_pictures = super_impose_pictures(filenames_to_images(pictures), whitened_pictures)
+
+
     save_pictures(final_pictures)
