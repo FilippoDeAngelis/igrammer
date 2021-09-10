@@ -25,12 +25,13 @@ def get_all_pictures_in_current_folder():
 
     return files
 
-def stretch_pictures(picture_names):
+def stretch_pictures(picture_names, size):
+    size = size if size is not None else 100
     # takes list of filenames, returns Image objects
     resized_images = []
     for picture_name in picture_names:
         image = Image.open(picture_name)
-        biggest_dimension = max(image.size)
+        biggest_dimension = int(max(image.size) * size/100)
         # make the image a square with side of biggest dimension
         resized_image = image.resize((biggest_dimension, biggest_dimension))
         resized_images.append(resized_image)
@@ -73,6 +74,17 @@ def super_impose_pictures(originals, whiteneds):
         whitened = whiteneds[i]
         or_x, or_y = original.size
         wh_x, wh_y = whitened.size
+        if max(or_x, or_y) != min(wh_x, wh_y):
+            # if images have a different size resize them
+            if max(or_x, or_y) == or_x:
+                # image is landscape, make width same as whitened width
+                ratio = wh_x / or_x * 100
+                original = original.resize((int(or_x * ratio / 100), int(or_y * ratio / 100)))
+            if max(or_x, or_y) == or_y:
+                # image is portrait, make width same as whitened width
+                ratio = wh_y / or_y * 100
+                original = original.resize((int(or_x * ratio / 100), int(or_y * ratio / 100)))
+            or_x, or_y = original.size
         offset = ((wh_x - or_x) // 2, (wh_y - or_y) // 2)
         whitened.paste(original, offset)
         output.append(whitened)
@@ -90,14 +102,15 @@ if __name__ == "__main__":
     red = None
     green = None
     blue = None
+    size = None
 
     try:
         # sys.argv needs a [1:] because getopt doesn't work if you leave the script name as an argument
-        options, args = getopt.getopt(sys.argv[1:], "o:r:g:b:", ["opacity=", "red=", "green=", "blue="])
+        options, args = getopt.getopt(sys.argv[1:], "o:r:g:b:s:", ["opacity=", "red=", "green=", "blue=", "size="])
     except getopt.GetoptError:
         # remember to update this when adding new parameters
         print("Usage: main.py [-o|--opacity <opacity 0-255>] [-r|--red <red 0-255>] [-g|--green <green 0-255>]"
-              "[-b|--blue <blue 0-255>]")
+              "[-b|--blue <blue 0-255>] [-s|--size <size % (100 is default)]")
         sys.exit()
 
     for option, argument in options:
@@ -109,10 +122,12 @@ if __name__ == "__main__":
             green = int(argument)
         elif option in ["-b", "--blue"]:
             blue = int(argument)
+        elif option in ["-s", "--size"]:
+            size = int(argument)
 
 
     pictures = get_all_pictures_in_current_folder()
-    stretched_pictures = stretch_pictures(pictures)
+    stretched_pictures = stretch_pictures(pictures, size)
     whitened_pictures = add_transparent_layer(stretched_pictures, opacity, red, green, blue)
     final_pictures = super_impose_pictures(filenames_to_images(pictures), whitened_pictures)
 
