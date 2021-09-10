@@ -36,9 +36,13 @@ def stretch_pictures(picture_names):
         resized_images.append(resized_image)
     return resized_images
 
-def add_transparent_layer(images, opacity):
+def add_transparent_layer(images, opacity, red, green, blue):
     # takes Image list, returns Image list
-    color = (255, 255, 255, opacity if opacity is not None else 204)   #make opacity 204 by default
+    red = red if red is not None else 255
+    green = green if green is not None else 255
+    blue = blue if blue is not None else 255
+    opacity = opacity if opacity is not None else 204
+    color = (red, green, blue, opacity)   #make opacity 204 by default
 
     output_images = []
     counter = 0
@@ -83,22 +87,33 @@ def save_pictures(images):
 
 if __name__ == "__main__":
     opacity = None
+    red = None
+    green = None
+    blue = None
 
     try:
         # sys.argv needs a [1:] because getopt doesn't work if you leave the script name as an argument
-        options, args = getopt.getopt(sys.argv[1:], "o:", ["opacity="])
+        options, args = getopt.getopt(sys.argv[1:], "o:r:g:b:", ["opacity=", "red=", "green=", "blue="])
     except getopt.GetoptError:
-        print("getopt error") #todo add tutorial
-        pass
+        # remember to update this when adding new parameters
+        print("Usage: main.py [-o|--opacity <opacity 0-255>] [-r|--red <red 0-255>] [-g|--green <green 0-255>]"
+              "[-b|--blue <blue 0-255>]")
+        sys.exit()
 
     for option, argument in options:
         if option in ["-o", "--opacity"]:  #opacity can be 0-255
             opacity = int(argument)
+        elif option in ["-r", "--red"]:
+            red = int(argument)
+        elif option in ["-g", "--green"]:
+            green = int(argument)
+        elif option in ["-b", "--blue"]:
+            blue = int(argument)
 
 
     pictures = get_all_pictures_in_current_folder()
     stretched_pictures = stretch_pictures(pictures)
-    whitened_pictures = add_transparent_layer(stretched_pictures, opacity)
+    whitened_pictures = add_transparent_layer(stretched_pictures, opacity, red, green, blue)
     final_pictures = super_impose_pictures(filenames_to_images(pictures), whitened_pictures)
 
 
